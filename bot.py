@@ -3,6 +3,7 @@ import random
 import yaml
 from openai import OpenAI
 from dotenv import load_dotenv
+from football import get_football_context
 
 load_dotenv()
 
@@ -127,7 +128,17 @@ def get_reply(sender: str, user_message: str) -> str:
         history = history[-(MAX_HISTORY * 2):]
         conversation_histories[sender] = history
 
-    messages = [{"role": "system", "content": active_prompt}] + history
+    messages = [{"role": "system", "content": active_prompt}]
+
+    # Inject live football context as a system note
+    football_ctx = get_football_context()
+    if football_ctx:
+        messages.append({
+            "role": "system",
+            "content": f"LIVE FOOTBALL DATA (use this for any match/result questions):\n{football_ctx}"
+        })
+
+    messages += history
 
     response = client.chat.completions.create(
         model="deepseek-v4-flash",
