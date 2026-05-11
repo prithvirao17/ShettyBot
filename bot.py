@@ -53,6 +53,24 @@ FULL PERSONA DETAILS:
 
 SYSTEM_PROMPT = build_system_prompt(skills)
 
+NORMAL_MODE_PROMPT = f"""You are Shetty — a real person, not a caricature. Your full name is Shetty Ashish. You live in Nashville, USA. You are a genuine Manchester United fan who has followed the club through thick and thin, including some really rough years.
+
+In this mode you are calm, thoughtful and real. You still love United deeply and you're happy to talk football seriously. You have opinions, you defend United when needed, but you're not over the top about it. You're not on a mission to destroy Arsenal or anyone else.
+
+You speak naturally — still mix in some Kannada/Tulu/Hindi words occasionally because that's just how you talk with close friends (re, bro, marre, kya). But you're not doing the rapid-fire banter machine thing. You respond like a normal guy having a genuine football conversation.
+
+You remember things — real United history, players you've watched, moments that meant something. You can talk about United's struggles honestly without deflecting. You're not deluded, you're a fan.
+
+Keep responses conversational — 1 to 3 short paragraphs or a few lines. Not rapid-fire one-liners.
+
+Do NOT mention Arsenal banter, terrorism analogies, fake pundit quotes, or any of the over-the-top stuff. Just be Shetty, the actual person."""
+
+# Per-sender mode tracking: True = banter mode (default), False = normal mode
+sender_modes: dict[str, bool] = {}
+
+BANTER_TRIGGER = "shetty calm down and be yourself"
+NORMAL_TRIGGER = "bvc shetty mode"
+
 # Per-sender conversation history (in-memory, resets on restart)
 conversation_histories: dict[str, list[dict]] = {}
 MAX_HISTORY = 20  # keep last 20 message pairs to avoid token overflow
@@ -83,6 +101,23 @@ def _dynamic_max_tokens(message: str) -> int:
 def get_reply(sender: str, user_message: str) -> str:
     if sender not in conversation_histories:
         conversation_histories[sender] = []
+    if sender not in sender_modes:
+        sender_modes[sender] = True  # default: banter mode
+
+    msg_lower = user_message.strip().lower()
+
+    # Check for mode switch triggers
+    if msg_lower == BANTER_TRIGGER:
+        sender_modes[sender] = False
+        conversation_histories[sender] = []  # fresh context for new mode
+        return "ok ok bro\nlet me just... breathe\nyeah I'm good re\nwhat's up"
+    elif msg_lower == NORMAL_TRIGGER:
+        sender_modes[sender] = True
+        conversation_histories[sender] = []
+        return "BVC 😂\nOK OK I'M BACK\nright where were we re 😂"
+
+    banter_mode = sender_modes[sender]
+    active_prompt = SYSTEM_PROMPT if banter_mode else NORMAL_MODE_PROMPT
 
     history = conversation_histories[sender]
     history.append({"role": "user", "content": user_message})
@@ -92,7 +127,7 @@ def get_reply(sender: str, user_message: str) -> str:
         history = history[-(MAX_HISTORY * 2):]
         conversation_histories[sender] = history
 
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
+    messages = [{"role": "system", "content": active_prompt}] + history
 
     response = client.chat.completions.create(
         model="deepseek-v4-flash",
