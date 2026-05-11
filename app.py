@@ -1,20 +1,24 @@
-from flask import Flask, request
-from twilio.twiml.messaging_response import MessagingResponse
+from flask import Flask, request, jsonify, render_template
 from bot import get_reply
 
 app = Flask(__name__)
 
 
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    incoming_msg = request.form.get("Body", "").strip()
-    sender = request.form.get("From", "")
+@app.route("/")
+def index():
+    return render_template("index.html")
 
-    reply_text = get_reply(sender, incoming_msg)
 
-    resp = MessagingResponse()
-    resp.message(reply_text)
-    return str(resp)
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.get_json()
+    message = data.get("message", "").strip()
+    if not message:
+        return jsonify({"reply": "re?"}), 400
+
+    # Use a fixed session key for browser (single-user webapp)
+    reply = get_reply("webapp_user", message)
+    return jsonify({"reply": reply})
 
 
 if __name__ == "__main__":
