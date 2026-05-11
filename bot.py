@@ -1,4 +1,5 @@
 import os
+import random
 import yaml
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -57,6 +58,28 @@ conversation_histories: dict[str, list[dict]] = {}
 MAX_HISTORY = 20  # keep last 20 message pairs to avoid token overflow
 
 
+def _dynamic_max_tokens(message: str) -> int:
+    """
+    Scale max_tokens based on message complexity + randomness.
+    Short/simple messages → short reply (Shetty-style quick jab).
+    Long/complex messages → longer rant with more bubbles.
+    """
+    words = len(message.split())
+
+    if words <= 5:
+        base = 80   # quick reaction
+    elif words <= 15:
+        base = 140  # normal banter
+    elif words <= 30:
+        base = 220  # involved topic
+    else:
+        base = 300  # full rant mode
+
+    # ±30% random noise so the same question never feels identical
+    noise = random.uniform(0.7, 1.3)
+    return max(60, int(base * noise))
+
+
 def get_reply(sender: str, user_message: str) -> str:
     if sender not in conversation_histories:
         conversation_histories[sender] = []
@@ -74,7 +97,7 @@ def get_reply(sender: str, user_message: str) -> str:
     response = client.chat.completions.create(
         model="deepseek-v4-flash",
         messages=messages,
-        max_tokens=300,
+        max_tokens=_dynamic_max_tokens(user_message),
         temperature=1.0,
     )
 
