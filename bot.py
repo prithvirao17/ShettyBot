@@ -73,7 +73,7 @@ NORMAL_TRIGGER = "bvc shetty mode"
 
 # Per-sender conversation history (in-memory, resets on restart)
 conversation_histories: dict[str, list[dict]] = {}
-MAX_HISTORY = 20  # keep last 20 message pairs to avoid token overflow
+MAX_HISTORY = 40  # keep last 40 message pairs to avoid token overflow
 
 
 def _dynamic_max_tokens(message: str) -> int:
