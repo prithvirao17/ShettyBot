@@ -72,7 +72,7 @@ def get_reply(sender: str, user_message: str) -> str:
     messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
 
     response = client.chat.completions.create(
-        model="deepseek-chat",
+        model="deepseek-v4-flash",
         messages=messages,
         max_tokens=300,
         temperature=1.0,
