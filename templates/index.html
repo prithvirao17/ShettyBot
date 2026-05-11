@@ -268,7 +268,6 @@
       const row = document.createElement('div');
       row.className = `message-row ${role}`;
 
-      // Split bot messages on newlines into separate bubbles
       const lines = role === 'bot'
         ? text.split('\n').map(l => l.trim()).filter(l => l.length > 0)
         : [text];
@@ -288,6 +287,52 @@
 
       messagesEl.appendChild(row);
       scrollBottom();
+    }
+
+    function appendBotMessagesDrip(lines) {
+      if (!lines || lines.length === 0) return;
+
+      const row = document.createElement('div');
+      row.className = 'message-row bot';
+      messagesEl.appendChild(row);
+
+      let i = 0;
+
+      function dropNext() {
+        if (i >= lines.length) return;
+
+        // Show typing indicator before each bubble
+        showTyping();
+        scrollBottom();
+
+        const delay = 600 + Math.min(lines[i].length * 18, 1400);
+
+        setTimeout(() => {
+          hideTyping();
+
+          const bubble = document.createElement('div');
+          bubble.className = 'bubble';
+          bubble.textContent = lines[i];
+
+          if (i === lines.length - 1) {
+            const t = document.createElement('span');
+            t.className = 'time';
+            t.textContent = now();
+            bubble.appendChild(t);
+          }
+
+          row.appendChild(bubble);
+          scrollBottom();
+          i++;
+
+          // Short gap between messages
+          if (i < lines.length) {
+            setTimeout(dropNext, 200);
+          }
+        }, delay);
+      }
+
+      dropNext();
     }
 
     function showTyping() {
@@ -324,10 +369,11 @@
         });
         const data = await res.json();
         hideTyping();
-        appendMessage(data.reply, 'bot');
+        const botLines = data.reply.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        appendBotMessagesDrip(botLines);
       } catch (e) {
         hideTyping();
-        appendMessage('bvc bro server crashed or something re 😭', 'bot');
+        appendBotMessagesDrip(['bvc bro server crashed or something re 😭']);
       }
 
       sendBtn.disabled = false;
