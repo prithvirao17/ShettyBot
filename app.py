@@ -12,8 +12,8 @@ def index():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    data = request.get_json()
-    message = data.get("message", "").strip()
+    data = request.get_json(silent=True) or {}
+    message = (data.get("message") or request.form.get("message") or "").strip()
     if not message:
         return jsonify({"reply": "re?"}), 400
 
