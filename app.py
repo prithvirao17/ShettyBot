@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template
+import traceback
 from bot import get_reply
 
 app = Flask(__name__)
@@ -16,9 +17,12 @@ def chat():
     if not message:
         return jsonify({"reply": "re?"}), 400
 
-    # Use a fixed session key for browser (single-user webapp)
-    reply = get_reply("webapp_user", message)
-    return jsonify({"reply": reply})
+    try:
+        reply = get_reply("webapp_user", message)
+        return jsonify({"reply": reply})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"reply": f"[error] {str(e)}"}), 500
 
 
 if __name__ == "__main__":
