@@ -85,17 +85,17 @@ def _dynamic_max_tokens(message: str) -> int:
     words = len(message.split())
 
     if words <= 5:
-        base = 80   # quick reaction
+        base = 200   # quick reaction
     elif words <= 15:
-        base = 140  # normal banter
+        base = 300  # normal banter
     elif words <= 30:
-        base = 220  # involved topic
+        base = 450  # involved topic
     else:
-        base = 300  # full rant mode
+        base = 600  # full rant mode
 
-    # ±30% random noise so the same question never feels identical
-    noise = random.uniform(0.7, 1.3)
-    return max(60, int(base * noise))
+    # ±25% random noise so the same question never feels identical
+    noise = random.uniform(0.75, 1.25)
+    return max(200, int(base * noise))
 
 
 def get_reply(sender: str, user_message: str) -> str:
@@ -134,6 +134,7 @@ def get_reply(sender: str, user_message: str) -> str:
         messages=messages,
         max_tokens=_dynamic_max_tokens(user_message),
         temperature=1.0,
+        extra_body={"thinking": {"type": "disabled"}},
     )
 
     reply = response.choices[0].message.content.strip()
